@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Free Resume Builder</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <style>
+        /* Basic styling */
+        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: #f5f7ff; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        header { text-align: center; padding: 30px 0; background: linear-gradient(135deg, #4361ee, #3a0ca3); color: white; border-radius: 10px; margin-bottom: 30px; }
+        header h1 { font-size: 2.5rem; margin-bottom: 10px; }
+        .app-container { display: flex; gap: 30px; flex-wrap: wrap; }
+        .form-section, .preview-section { flex: 1; min-width: 300px; background: white; padding: 25px; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+        h2 { color: #4361ee; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 2px solid #dee2e6; }
+        .form-group { margin-bottom: 20px; }
+        label { display: block; margin-bottom: 8px; font-weight: 600; }
+        input, textarea, select { width: 100%; padding: 12px; border: 1px solid #dee2e6; border-radius: 5px; font-size: 16px; }
+        button { background: #4361ee; color: white; border: none; padding: 12px 20px; border-radius: 5px; cursor: pointer; font-size: 16px; font-weight: 600; }
+        button:hover { background: #3a0ca3; }
+        .btn-generate { background: #f72585; margin-top: 20px; width: 100%; }
+        .btn-generate:hover { background: #c1121f; }
+        .template-selector { display: flex; gap: 15px; margin: 20px 0; flex-wrap: wrap; }
+        .template-option { border: 2px solid #dee2e6; border-radius: 5px; padding: 10px; cursor: pointer; transition: all 0.3s; width: 140px; text-align: center; }
+        .template-option:hover { transform: translateY(-3px); box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+        .template-option.active { border-color: #4361ee; background-color: rgba(67, 97, 238, 0.1); }
+        .template-preview { height: 100px; background: linear-gradient(45deg, #e5e5e5, #f0f0f0); margin-bottom: 10px; border-radius: 3px; display: flex; align-items: center; justify-content: center; font-size: 12px; color: #666; }
+        .resume-preview { flex-grow: 1; border: 1px solid #dee2e6; border-radius: 5px; padding: 20px; overflow-y: auto; background: white; }
+        .hidden { display: none; }
+        .footer { text-align: center; margin-top: 40px; padding: 20px; color: #666; font-size: 0.9rem; }
+        @media (max-width: 768px) { .app-container { flex-direction: column; } .template-option { width: 120px; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Free Resume Builder</h1>
+            <p>Create professional resumes in minutes. Download as PDF for free!</p>
+        </header>
+        <div class="app-container">
+            <div class="form-section">
+                <h2>Build Your Resume</h2>
+                <div class="upload-area" id="uploadArea">
+                    <div class="upload-icon">📄</div>
+                    <p>Upload your existing resume (PDF, DOCX) - <em>Coming Soon</em></p>
+                    <input type="file" id="fileUpload" class="hidden" accept=".pdf,.doc,.docx">
+                </div>
+                <div class="template-selector">
+                    <div class="template-option active" data-template="modern">
+                        <div class="template-preview">Modern</div>
+                        <div>Modern</div>
+                    </div>
+                    <div class="template-option" data-template="classic">
+                        <div class="template-preview">Classic</div>
+                        <div>Classic</div>
+                    </div>
+                    <div class="template-option" data-template="minimal">
+                        <div class="template-preview">Minimal</div>
+                        <div>Minimal</div>
+                    </div>
+                </div>
+                <form id="resumeForm">
+                    <div class="form-group">
+                        <label for="fullName">Full Name</label>
+                        <input type="text" id="fullName" placeholder="John Doe" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="jobTitle">Professional Title</label>
+                        <input type="text" id="jobTitle" placeholder="Software Developer">
+                    </div>
+                    <div class="form-group">
+                        <label for="email">Email</label>
+                        <input type="email" id="email" placeholder="john.doe@example.com">
+                    </div>
+                    <div class="form-group">
+                        <label for="phone">Phone</label>
+                        <input type="tel" id="phone" placeholder="+1 (123) 456-7890">
+                    </div>
+                    <div class="form-group">
+                        <label for="location">Location</label>
+                        <input type="text" id="location" placeholder="New York, NY">
+                    </div>
+                    <div class="form-group">
+                        <label for="summary">Professional Summary</label>
+                        <textarea id="summary" rows="3" placeholder="Experienced professional with..."></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="experience">Work Experience</label>
+                        <textarea id="experience" rows="4" placeholder="Company A - Position (2020-2022)
+- Achieved X by doing Y
+- Improved process efficiency by 25%"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="education">Education</label>
+                        <textarea id="education" rows="3" placeholder="University Name - Degree (2014-2018)"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="skills">Skills</label>
+                        <textarea id="skills" rows="2" placeholder="JavaScript, React, Node.js"></textarea>
+                    </div>
+                    <button type="button" class="btn-generate" id="generatePdf">Generate & Download PDF</button>
+                </form>
+            </div>
+            <div class="preview-section">
+                <h2>Resume Preview</h2>
+                <div class="resume-preview" id="resumePreview">
+                    <!-- Preview will be generated here -->
+                </div>
+                <div class="actions">
+                    <button id="saveData">Save Data</button>
+                    <button id="resetForm">Reset Form</button>
+                </div>
+            </div>
+        </div>
+        <div class="footer">
+            <p>This free resume builder is hosted on GitHub Pages. Your data remains private and is not stored on any server.</p>
+        </div>
+    </div>
+    <script>
+        // JavaScript functionality for form handling, preview, and PDF generation
+        document.addEventListener('DOMContentLoaded', function() {
+            const resumeForm = document.getElementById('resumeForm');
+            const generatePdfBtn = document.getElementById('generatePdf');
+            const saveDataBtn = document.getElementById('saveData');
+            const resetFormBtn = document.getElementById('resetForm');
+            const resumePreview = document.getElementById('resumePreview');
+            const templateOptions = document.querySelectorAll('.template-option');
+            let currentTemplate = 'modern';
+
+            // Template selection
+            templateOptions.forEach(option => {
+                option.addEventListener('click', function() {
+                    templateOptions.forEach(opt => opt.classList.remove('active'));
+                    this.classList.add('active');
+                    currentTemplate = this.dataset.template;
+                    updateResumePreview();
+                });
+            });
+
+            // Update preview when form changes
+            resumeForm.addEventListener('input', updateResumePreview);
+
+            // Generate PDF
+            generatePdfBtn.addEventListener('click', function() {
+                const element = document.getElementById('resumePreview');
+                const options = {
+                    margin: 10,
+                    filename: 'my-resume.pdf',
+                    image: { type: 'jpeg', quality: 0.98 },
+                    html2canvas: { scale: 2 },
+                    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+                };
+                html2pdf().set(options).from(element).save();
+            });
+
+            // Save data to local storage
+            saveDataBtn.addEventListener('click', function() {
+                const formData = {};
+                document.querySelectorAll('#resumeForm input, #resumeForm textarea').forEach(input => {
+                    formData[input.id] = input.value;
+                });
+                localStorage.setItem('resumeData', JSON.stringify(formData));
+                alert('Resume data saved successfully!');
+            });
+
+            // Reset form
+            resetFormBtn.addEventListener('click', function() {
+                if (confirm('Are you sure you want to reset the form? All data will be lost.')) {
+                    resumeForm.reset();
+                    localStorage.removeItem('resumeData');
+                    updateResumePreview();
+                }
+            });
+
+            // Load saved data if exists
+            const savedData = localStorage.getItem('resumeData');
+            if (savedData) {
+                const formData = JSON.parse(savedData);
+                for (const id in formData) {
+                    if (document.getElementById(id)) {
+                        document.getElementById(id).value = formData[id];
+                    }
+                }
+                updateResumePreview();
+            }
+
+            // Update resume preview
+            function updateResumePreview() {
+                const formData = {
+                    fullName: document.getElementById('fullName').value || 'John Doe',
+                    jobTitle: document.getElementById('jobTitle').value || 'Professional Title',
+                    email: document.getElementById('email').value || 'john.doe@example.com',
+                    phone: document.getElementById('phone').value || '+1 (123) 456-7890',
+                    location: document.getElementById('location').value || 'New York, NY',
+                    summary: document.getElementById('summary').value || 'Experienced professional with a proven track record of success...',
+                    experience: document.getElementById('experience').value,
+                    education: document.getElementById('education').value,
+                    skills: document.getElementById('skills').value || 'JavaScript, React, Node.js, Python, Project Management'
+                };
+
+                let experienceHtml = '';
+                if (formData.experience) {
+                    const entries = formData.experience.split('\n\n');
+                    experienceHtml = entries.map(entry => {
+                        const lines = entry.split('\n');
+                        let html = `<strong>${lines[0]}</strong>`;
+                        if (lines.length > 1) {
+                            html += '<ul>';
+                            for (let i = 1; i < lines.length; i++) {
+                                if (lines[i].trim()) {
+                                    html += `<li>${lines[i].replace(/^- /, '')}</li>`;
+                                }
+                            }
+                            html += '</ul>';
+                        }
+                        return html;
+                    }).join('');
+                }
+
+                let educationHtml = '';
+                if (formData.education) {
+                    const entries = formData.education.split('\n\n');
+                    educationHtml = entries.map(entry => {
+                        const lines = entry.split('\n');
+                        let html = `<strong>${lines[0]}</strong>`;
+                        if (lines.length > 1) {
+                            html += `<div>${lines[1]}</div>`;
+                        }
+                        return html;
+                    }).join('');
+                }
+
+                const templateHtml = `
+                    <div class="template-${currentTemplate}">
+                        <div class="header">
+                            <div class="name">${formData.fullName}</div>
+                            <div class="contact">${formData.email} | ${formData.phone} | ${formData.location}</div>
+                            ${formData.jobTitle ? `<div class="job-title">${formData.jobTitle}</div>` : ''}
+                        </div>
+                        ${formData.summary ? `<div class="section"><div class="section-title">PROFESSIONAL SUMMARY</div><div>${formData.summary}</div></div>` : ''}
+                        ${formData.experience ? `<div class="section"><div class="section-title">EXPERIENCE</div><div>${experienceHtml}</div></div>` : ''}
+                        ${formData.education ? `<div class="section"><div class="section-title">EDUCATION</div><div>${educationHtml}</div></div>` : ''}
+                        ${formData.skills ? `<div class="section"><div class="section-title">SKILLS</div><div>${formData.skills}</div></div>` : ''}
+                    </div>
+                `;
+                resumePreview.innerHTML = templateHtml;
+            }
+            updateResumePreview();
+        });
+    </script>
+</body>
+</html>
