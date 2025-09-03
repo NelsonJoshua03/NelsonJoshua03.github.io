@@ -422,6 +422,12 @@
             opacity: 0.7;
             pointer-events: none;
         }
+
+        #pdf-container {
+            position: absolute;
+            left: -9999px;
+            top: -9999px;
+        }
     </style>
 </head>
 <body>
@@ -563,6 +569,9 @@ College Name - Diploma (2012-2014)"></textarea>
         </div>
     </div>
 
+    <!-- Hidden container for PDF generation -->
+    <div id="pdf-container" style="position: absolute; left: -9999px; top: -9999px;"></div>
+
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             // Elements
@@ -572,6 +581,7 @@ College Name - Diploma (2012-2014)"></textarea>
             const resetFormBtn = document.getElementById('resetForm');
             const resumePreview = document.getElementById('resumePreview');
             const templateOptions = document.querySelectorAll('.template-option');
+            const pdfContainer = document.getElementById('pdf-container');
             
             // Current template
             let currentTemplate = 'modern';
@@ -606,12 +616,9 @@ College Name - Diploma (2012-2014)"></textarea>
                 element.style.boxShadow = 'none';
                 element.style.border = 'none';
                 
-                // Create a container for PDF generation
-                const pdfContainer = document.createElement('div');
-                pdfContainer.style.position = 'absolute';
-                pdfContainer.style.left = '-9999px';
+                // Clear and add to PDF container
+                pdfContainer.innerHTML = '';
                 pdfContainer.appendChild(element);
-                document.body.appendChild(pdfContainer);
                 
                 const options = {
                     margin: [0, 0, 0, 0],
@@ -620,7 +627,8 @@ College Name - Diploma (2012-2014)"></textarea>
                     html2canvas: { 
                         scale: 2,
                         useCORS: true,
-                        logging: true
+                        logging: true,
+                        backgroundColor: '#FFFFFF'
                     },
                     jsPDF: { 
                         unit: 'mm', 
@@ -632,23 +640,15 @@ College Name - Diploma (2012-2014)"></textarea>
                 // Generate PDF
                 html2pdf()
                     .set(options)
-                    .from(pdfContainer)
+                    .from(element)
                     .save()
                     .then(() => {
-                        // Clean up
-                        document.body.removeChild(pdfContainer);
-                        
                         // Reset button
                         generatePdfBtn.textContent = 'Generate & Download PDF';
                         document.body.classList.remove('loading');
                     })
                     .catch(error => {
                         console.error('PDF generation error:', error);
-                        
-                        // Clean up even if there's an error
-                        if (pdfContainer.parentNode) {
-                            document.body.removeChild(pdfContainer);
-                        }
                         
                         // Reset button
                         generatePdfBtn.textContent = 'Generate & Download PDF';
