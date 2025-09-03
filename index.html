@@ -6,30 +6,398 @@
     <title>Free Resume Builder</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
-        /* Basic styling */
-        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: #f5f7ff; }
-        .container { max-width: 1200px; margin: 0 auto; }
-        header { text-align: center; padding: 30px 0; background: linear-gradient(135deg, #4361ee, #3a0ca3); color: white; border-radius: 10px; margin-bottom: 30px; }
-        header h1 { font-size: 2.5rem; margin-bottom: 10px; }
-        .app-container { display: flex; gap: 30px; flex-wrap: wrap; }
-        .form-section, .preview-section { flex: 1; min-width: 300px; background: white; padding: 25px; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
-        h2 { color: #4361ee; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 2px solid #dee2e6; }
-        .form-group { margin-bottom: 20px; }
-        label { display: block; margin-bottom: 8px; font-weight: 600; }
-        input, textarea, select { width: 100%; padding: 12px; border: 1px solid #dee2e6; border-radius: 5px; font-size: 16px; }
-        button { background: #4361ee; color: white; border: none; padding: 12px 20px; border-radius: 5px; cursor: pointer; font-size: 16px; font-weight: 600; }
-        button:hover { background: #3a0ca3; }
-        .btn-generate { background: #f72585; margin-top: 20px; width: 100%; }
-        .btn-generate:hover { background: #c1121f; }
-        .template-selector { display: flex; gap: 15px; margin: 20px 0; flex-wrap: wrap; }
-        .template-option { border: 2px solid #dee2e6; border-radius: 5px; padding: 10px; cursor: pointer; transition: all 0.3s; width: 140px; text-align: center; }
-        .template-option:hover { transform: translateY(-3px); box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
-        .template-option.active { border-color: #4361ee; background-color: rgba(67, 97, 238, 0.1); }
-        .template-preview { height: 100px; background: linear-gradient(45deg, #e5e5e5, #f0f0f0); margin-bottom: 10px; border-radius: 3px; display: flex; align-items: center; justify-content: center; font-size: 12px; color: #666; }
-        .resume-preview { flex-grow: 1; border: 1px solid #dee2e6; border-radius: 5px; padding: 20px; overflow-y: auto; background: white; }
-        .hidden { display: none; }
-        .footer { text-align: center; margin-top: 40px; padding: 20px; color: #666; font-size: 0.9rem; }
-        @media (max-width: 768px) { .app-container { flex-direction: column; } .template-option { width: 120px; } }
+        :root {
+            --primary: #4361ee;
+            --secondary: #3a0ca3;
+            --accent: #f72585;
+            --light: #f8f9fa;
+            --dark: #212529;
+            --success: #4cc9f0;
+            --border: #dee2e6;
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f5f7ff;
+            color: var(--dark);
+            line-height: 1.6;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            padding: 30px 0;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        
+        header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        
+        header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+        
+        .app-container {
+            display: flex;
+            gap: 30px;
+            flex-wrap: wrap;
+        }
+        
+        .form-section {
+            flex: 1;
+            min-width: 300px;
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        }
+        
+        .preview-section {
+            flex: 1;
+            min-width: 300px;
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            display: flex;
+            flex-direction: column;
+        }
+        
+        h2 {
+            color: var(--primary);
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--border);
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--dark);
+        }
+        
+        input, textarea, select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid var(--border);
+            border-radius: 5px;
+            font-size: 16px;
+            transition: border 0.3s;
+        }
+        
+        input:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.2);
+        }
+        
+        button {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: background 0.3s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        button:hover {
+            background: var(--secondary);
+        }
+        
+        .btn-generate {
+            background: var(--accent);
+            margin-top: 20px;
+            width: 100%;
+        }
+        
+        .btn-generate:hover {
+            background: #c1121f;
+        }
+        
+        .template-selector {
+            display: flex;
+            gap: 15px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+        
+        .template-option {
+            border: 2px solid var(--border);
+            border-radius: 5px;
+            padding: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            width: 140px;
+            text-align: center;
+        }
+        
+        .template-option:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .template-option.active {
+            border-color: var(--primary);
+            background-color: rgba(67, 97, 238, 0.1);
+        }
+        
+        .template-preview {
+            height: 100px;
+            background: linear-gradient(45deg, #e5e5e5, #f0f0f0);
+            margin-bottom: 10px;
+            border-radius: 3px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            color: #666;
+        }
+        
+        .resume-preview {
+            flex-grow: 1;
+            border: 1px solid var(--border);
+            border-radius: 5px;
+            padding: 20px;
+            overflow-y: auto;
+            background: white;
+            min-height: 500px;
+        }
+        
+        /* Modern Template Styles */
+        .template-modern {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .template-modern .header {
+            text-align: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid var(--primary);
+        }
+        
+        .template-modern .name {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 5px;
+        }
+        
+        .template-modern .contact {
+            color: #666;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+        
+        .template-modern .job-title {
+            font-size: 18px;
+            color: var(--secondary);
+            font-weight: 600;
+        }
+        
+        .template-modern .section {
+            margin-bottom: 20px;
+        }
+        
+        .template-modern .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--secondary);
+            border-bottom: 2px solid var(--primary);
+            padding-bottom: 5px;
+            margin-bottom: 10px;
+        }
+        
+        .template-modern ul {
+            padding-left: 20px;
+            margin: 10px 0;
+        }
+        
+        .template-modern li {
+            margin-bottom: 5px;
+        }
+        
+        /* Classic Template Styles */
+        .template-classic {
+            font-family: Georgia, 'Times New Roman', Times, serif;
+        }
+        
+        .template-classic .header {
+            text-align: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #ccc;
+        }
+        
+        .template-classic .name {
+            font-size: 26px;
+            font-weight: 700;
+            color: var(--dark);
+            margin-bottom: 5px;
+        }
+        
+        .template-classic .contact {
+            color: #666;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+        
+        .template-classic .job-title {
+            font-size: 18px;
+            color: #555;
+            font-style: italic;
+        }
+        
+        .template-classic .section {
+            margin-bottom: 20px;
+        }
+        
+        .template-classic .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--dark);
+            border-bottom: 1px solid #ccc;
+            padding-bottom: 5px;
+            margin-bottom: 10px;
+        }
+        
+        .template-classic ul {
+            padding-left: 20px;
+            margin: 10px 0;
+        }
+        
+        .template-classic li {
+            margin-bottom: 5px;
+        }
+        
+        /* Minimal Template Styles */
+        .template-minimal {
+            font-family: Arial, Helvetica, sans-serif;
+        }
+        
+        .template-minimal .header {
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .template-minimal .name {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--dark);
+            margin-bottom: 5px;
+        }
+        
+        .template-minimal .contact {
+            color: #666;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+        
+        .template-minimal .job-title {
+            font-size: 16px;
+            color: #777;
+        }
+        
+        .template-minimal .section {
+            margin-bottom: 20px;
+        }
+        
+        .template-minimal .section-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--dark);
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .template-minimal ul {
+            padding-left: 18px;
+            margin: 8px 0;
+        }
+        
+        .template-minimal li {
+            margin-bottom: 4px;
+            font-size: 14px;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .upload-area {
+            border: 2px dashed var(--border);
+            border-radius: 5px;
+            padding: 20px;
+            text-align: center;
+            margin-bottom: 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .upload-area:hover {
+            border-color: var(--primary);
+            background-color: rgba(67, 97, 238, 0.05);
+        }
+        
+        .upload-icon {
+            font-size: 40px;
+            color: var(--primary);
+            margin-bottom: 10px;
+        }
+        
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            padding: 20px;
+            color: #666;
+            font-size: 0.9rem;
+        }
+        
+        @media (max-width: 768px) {
+            .app-container {
+                flex-direction: column;
+            }
+            
+            .template-option {
+                width: 120px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -38,14 +406,17 @@
             <h1>Free Resume Builder</h1>
             <p>Create professional resumes in minutes. Download as PDF for free!</p>
         </header>
+        
         <div class="app-container">
             <div class="form-section">
                 <h2>Build Your Resume</h2>
+                
                 <div class="upload-area" id="uploadArea">
                     <div class="upload-icon">📄</div>
                     <p>Upload your existing resume (PDF, DOCX) - <em>Coming Soon</em></p>
                     <input type="file" id="fileUpload" class="hidden" accept=".pdf,.doc,.docx">
                 </div>
+                
                 <div class="template-selector">
                     <div class="template-option active" data-template="modern">
                         <div class="template-preview">Modern</div>
@@ -60,87 +431,113 @@
                         <div>Minimal</div>
                     </div>
                 </div>
+                
                 <form id="resumeForm">
                     <div class="form-group">
                         <label for="fullName">Full Name</label>
                         <input type="text" id="fullName" placeholder="John Doe" required>
                     </div>
+                    
                     <div class="form-group">
                         <label for="jobTitle">Professional Title</label>
                         <input type="text" id="jobTitle" placeholder="Software Developer">
                     </div>
+                    
                     <div class="form-group">
                         <label for="email">Email</label>
                         <input type="email" id="email" placeholder="john.doe@example.com">
                     </div>
+                    
                     <div class="form-group">
                         <label for="phone">Phone</label>
                         <input type="tel" id="phone" placeholder="+1 (123) 456-7890">
                     </div>
+                    
                     <div class="form-group">
                         <label for="location">Location</label>
                         <input type="text" id="location" placeholder="New York, NY">
                     </div>
+                    
                     <div class="form-group">
                         <label for="summary">Professional Summary</label>
                         <textarea id="summary" rows="3" placeholder="Experienced professional with..."></textarea>
                     </div>
+                    
                     <div class="form-group">
                         <label for="experience">Work Experience</label>
                         <textarea id="experience" rows="4" placeholder="Company A - Position (2020-2022)
 - Achieved X by doing Y
-- Improved process efficiency by 25%"></textarea>
+- Improved process efficiency by 25%
+
+Company B - Position (2018-2020)
+- Managed a team of 10 people
+- Implemented new system that reduced costs"></textarea>
                     </div>
+                    
                     <div class="form-group">
                         <label for="education">Education</label>
-                        <textarea id="education" rows="3" placeholder="University Name - Degree (2014-2018)"></textarea>
+                        <textarea id="education" rows="3" placeholder="University Name - Degree (2014-2018)
+- Relevant coursework or achievements
+
+College Name - Diploma (2012-2014)"></textarea>
                     </div>
+                    
                     <div class="form-group">
                         <label for="skills">Skills</label>
-                        <textarea id="skills" rows="2" placeholder="JavaScript, React, Node.js"></textarea>
+                        <textarea id="skills" rows="2" placeholder="JavaScript, React, Node.js, Python, Project Management"></textarea>
                     </div>
-                    <button type="button" class="btn-generate" id="generatePdf">Generate & Download PDF</button>
+                    
+                    <button type="button" class="btn-generate" id="generatePdf">
+                        <span>Generate & Download PDF</span>
+                    </button>
                 </form>
             </div>
+            
             <div class="preview-section">
                 <h2>Resume Preview</h2>
                 <div class="resume-preview" id="resumePreview">
                     <!-- Preview will be generated here -->
                 </div>
+                
                 <div class="actions">
                     <button id="saveData">Save Data</button>
                     <button id="resetForm">Reset Form</button>
                 </div>
             </div>
         </div>
+        
         <div class="footer">
             <p>This free resume builder is hosted on GitHub Pages. Your data remains private and is not stored on any server.</p>
+            <p>© 2023 Free Resume Builder. All rights reserved.</p>
         </div>
     </div>
+
     <script>
-        // JavaScript functionality for form handling, preview, and PDF generation
         document.addEventListener('DOMContentLoaded', function() {
+            // Elements
             const resumeForm = document.getElementById('resumeForm');
             const generatePdfBtn = document.getElementById('generatePdf');
             const saveDataBtn = document.getElementById('saveData');
             const resetFormBtn = document.getElementById('resetForm');
             const resumePreview = document.getElementById('resumePreview');
             const templateOptions = document.querySelectorAll('.template-option');
+            
+            // Current template
             let currentTemplate = 'modern';
-
+            
             // Template selection
             templateOptions.forEach(option => {
                 option.addEventListener('click', function() {
                     templateOptions.forEach(opt => opt.classList.remove('active'));
                     this.classList.add('active');
-                    currentTemplate = this.dataset.template;
+                    currentTemplate = this.getAttribute('data-template');
                     updateResumePreview();
                 });
             });
-
+            
             // Update preview when form changes
             resumeForm.addEventListener('input', updateResumePreview);
-
+            
             // Generate PDF
             generatePdfBtn.addEventListener('click', function() {
                 const element = document.getElementById('resumePreview');
@@ -151,19 +548,21 @@
                     html2canvas: { scale: 2 },
                     jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
                 };
+                
                 html2pdf().set(options).from(element).save();
             });
-
+            
             // Save data to local storage
             saveDataBtn.addEventListener('click', function() {
                 const formData = {};
                 document.querySelectorAll('#resumeForm input, #resumeForm textarea').forEach(input => {
                     formData[input.id] = input.value;
                 });
+                
                 localStorage.setItem('resumeData', JSON.stringify(formData));
                 alert('Resume data saved successfully!');
             });
-
+            
             // Reset form
             resetFormBtn.addEventListener('click', function() {
                 if (confirm('Are you sure you want to reset the form? All data will be lost.')) {
@@ -172,7 +571,7 @@
                     updateResumePreview();
                 }
             });
-
+            
             // Load saved data if exists
             const savedData = localStorage.getItem('resumeData');
             if (savedData) {
@@ -184,7 +583,7 @@
                 }
                 updateResumePreview();
             }
-
+            
             // Update resume preview
             function updateResumePreview() {
                 const formData = {
@@ -198,7 +597,7 @@
                     education: document.getElementById('education').value,
                     skills: document.getElementById('skills').value || 'JavaScript, React, Node.js, Python, Project Management'
                 };
-
+                
                 let experienceHtml = '';
                 if (formData.experience) {
                     const entries = formData.experience.split('\n\n');
@@ -217,7 +616,7 @@
                         return html;
                     }).join('');
                 }
-
+                
                 let educationHtml = '';
                 if (formData.education) {
                     const entries = formData.education.split('\n\n');
@@ -230,7 +629,7 @@
                         return html;
                     }).join('');
                 }
-
+                
                 const templateHtml = `
                     <div class="template-${currentTemplate}">
                         <div class="header">
@@ -238,14 +637,41 @@
                             <div class="contact">${formData.email} | ${formData.phone} | ${formData.location}</div>
                             ${formData.jobTitle ? `<div class="job-title">${formData.jobTitle}</div>` : ''}
                         </div>
-                        ${formData.summary ? `<div class="section"><div class="section-title">PROFESSIONAL SUMMARY</div><div>${formData.summary}</div></div>` : ''}
-                        ${formData.experience ? `<div class="section"><div class="section-title">EXPERIENCE</div><div>${experienceHtml}</div></div>` : ''}
-                        ${formData.education ? `<div class="section"><div class="section-title">EDUCATION</div><div>${educationHtml}</div></div>` : ''}
-                        ${formData.skills ? `<div class="section"><div class="section-title">SKILLS</div><div>${formData.skills}</div></div>` : ''}
+                        
+                        ${formData.summary ? `
+                        <div class="section">
+                            <div class="section-title">PROFESSIONAL SUMMARY</div>
+                            <div>${formData.summary}</div>
+                        </div>
+                        ` : ''}
+                        
+                        ${formData.experience ? `
+                        <div class="section">
+                            <div class="section-title">EXPERIENCE</div>
+                            <div>${experienceHtml}</div>
+                        </div>
+                        ` : ''}
+                        
+                        ${formData.education ? `
+                        <div class="section">
+                            <div class="section-title">EDUCATION</div>
+                            <div>${educationHtml}</div>
+                        </div>
+                        ` : ''}
+                        
+                        ${formData.skills ? `
+                        <div class="section">
+                            <div class="section-title">SKILLS</div>
+                            <div>${formData.skills}</div>
+                        </div>
+                        ` : ''}
                     </div>
                 `;
+                
                 resumePreview.innerHTML = templateHtml;
             }
+            
+            // Initialize preview
             updateResumePreview();
         });
     </script>
