@@ -389,7 +389,7 @@
             font-size: 0.9rem;
         }
         
-        /* PDF-specific styles */
+        /* Print styles for PDF */
         @media print {
             body * {
                 visibility: hidden;
@@ -402,7 +402,9 @@
                 left: 0;
                 top: 0;
                 width: 100%;
-                padding: 15px;
+                padding: 15mm;
+                box-shadow: none;
+                border: none;
             }
         }
         
@@ -557,36 +559,69 @@ College Name - Diploma (2012-2014)"></textarea>
             
             // Generate PDF - FIXED VERSION
             generatePdfBtn.addEventListener('click', function() {
-                // Create a clone of the preview element
-                const element = resumePreview.cloneNode(true);
-                element.id = 'pdf-resume'; // Change ID to avoid conflicts
-                element.style.padding = '20px';
-                element.style.width = '210mm'; // A4 width
-                element.style.minHeight = '297mm'; // A4 height
+                // Create a clone of the preview for PDF generation
+                const element = document.getElementById('resumePreview').cloneNode(true);
                 
-                // Apply template-specific styles for PDF
-                element.classList.add(`template-${currentTemplate}`);
+                // Apply print styles
+                element.style.width = '210mm';
+                element.style.padding = '15mm';
+                element.style.backgroundColor = '#FFFFFF';
+                element.style.boxShadow = 'none';
+                element.style.border = 'none';
                 
-                // Temporarily append to body for printing
-                document.body.appendChild(element);
+                // Create a container for PDF generation
+                const pdfContainer = document.createElement('div');
+                pdfContainer.style.position = 'absolute';
+                pdfContainer.style.left = '-9999px';
+                pdfContainer.appendChild(element);
+                document.body.appendChild(pdfContainer);
                 
                 const options = {
-                    margin: 10,
+                    margin: [0, 0, 0, 0],
                     filename: 'my-resume.pdf',
                     image: { type: 'jpeg', quality: 0.98 },
                     html2canvas: { 
                         scale: 2,
                         useCORS: true,
-                        logging: false
+                        logging: true
                     },
-                    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+                    jsPDF: { 
+                        unit: 'mm', 
+                        format: 'a4', 
+                        orientation: 'portrait' 
+                    }
                 };
                 
-                // Generate and download PDF
-                html2pdf().set(options).from(element).save().then(() => {
-                    // Remove the temporary element after PDF generation
-                    document.body.removeChild(element);
-                });
+                // Show loading state
+                const originalText = generatePdfBtn.textContent;
+                generatePdfBtn.textContent = 'Generating PDF...';
+                generatePdfBtn.disabled = true;
+                
+                // Generate PDF
+                html2pdf()
+                    .set(options)
+                    .from(pdfContainer)
+                    .save()
+                    .then(() => {
+                        // Clean up
+                        document.body.removeChild(pdfContainer);
+                        
+                        // Reset button
+                        generatePdfBtn.textContent = originalText;
+                        generatePdfBtn.disabled = false;
+                    })
+                    .catch(error => {
+                        console.error('PDF generation error:', error);
+                        
+                        // Clean up even if there's an error
+                        document.body.removeChild(pdfContainer);
+                        
+                        // Reset button
+                        generatePdfBtn.textContent = originalText;
+                        generatePdfBtn.disabled = false;
+                        
+                        alert('Error generating PDF. Please try again.');
+                    });
             });
             
             // Save data to local storage
@@ -640,7 +675,7 @@ College Name - Diploma (2012-2014)"></textarea>
                     const entries = formData.experience.split('\n\n');
                     experienceHtml = entries.map(entry => {
                         const lines = entry.split('\n');
-                        let html = `<div class="experience-entry"><strong>${lines[0]}</strong>`;
+                        let html = `<strong>${lines[0]}</strong>`;
                         if (lines.length > 1) {
                             html += '<ul>';
                             for (let i = 1; i < lines.length; i++) {
@@ -650,7 +685,6 @@ College Name - Diploma (2012-2014)"></textarea>
                             }
                             html += '</ul>';
                         }
-                        html += '</div>';
                         return html;
                     }).join('');
                 }
@@ -660,11 +694,10 @@ College Name - Diploma (2012-2014)"></textarea>
                     const entries = formData.education.split('\n\n');
                     educationHtml = entries.map(entry => {
                         const lines = entry.split('\n');
-                        let html = `<div class="education-entry"><strong>${lines[0]}</strong>`;
+                        let html = `<strong>${lines[0]}</strong>`;
                         if (lines.length > 1) {
                             html += `<div>${lines[1]}</div>`;
                         }
-                        html += '</div>';
                         return html;
                     }).join('');
                 }
