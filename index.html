@@ -427,6 +427,11 @@
             position: absolute;
             left: -9999px;
             top: -9999px;
+            width: 210mm;
+            min-height: 297mm;
+            padding: 15mm;
+            background: white;
+            box-sizing: border-box;
         }
     </style>
 </head>
@@ -570,7 +575,7 @@ College Name - Diploma (2012-2014)"></textarea>
     </div>
 
     <!-- Hidden container for PDF generation -->
-    <div id="pdf-container" style="position: absolute; left: -9999px; top: -9999px;"></div>
+    <div id="pdf-container"></div>
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
@@ -603,31 +608,24 @@ College Name - Diploma (2012-2014)"></textarea>
             generatePdfBtn.addEventListener('click', function() {
                 // Add loading state
                 document.body.classList.add('loading');
+                const originalText = generatePdfBtn.textContent;
                 generatePdfBtn.textContent = 'Generating PDF...';
                 
-                // Create a clone of the preview for PDF generation
-                const element = resumePreview.cloneNode(true);
+                // Create a clean version of the resume for PDF
+                const formData = getFormData();
+                const pdfHtml = generatePdfHtml(formData);
                 
-                // Apply print styles
-                element.style.width = '210mm';
-                element.style.minHeight = '297mm';
-                element.style.padding = '15mm';
-                element.style.backgroundColor = '#FFFFFF';
-                element.style.boxShadow = 'none';
-                element.style.border = 'none';
-                
-                // Clear and add to PDF container
-                pdfContainer.innerHTML = '';
-                pdfContainer.appendChild(element);
+                // Put the content in the PDF container
+                pdfContainer.innerHTML = pdfHtml;
                 
                 const options = {
-                    margin: [0, 0, 0, 0],
+                    margin: [10, 10, 10, 10],
                     filename: 'my-resume.pdf',
                     image: { type: 'jpeg', quality: 0.98 },
                     html2canvas: { 
                         scale: 2,
                         useCORS: true,
-                        logging: true,
+                        logging: false,
                         backgroundColor: '#FFFFFF'
                     },
                     jsPDF: { 
@@ -640,18 +638,18 @@ College Name - Diploma (2012-2014)"></textarea>
                 // Generate PDF
                 html2pdf()
                     .set(options)
-                    .from(element)
+                    .from(pdfContainer)
                     .save()
                     .then(() => {
                         // Reset button
-                        generatePdfBtn.textContent = 'Generate & Download PDF';
+                        generatePdfBtn.textContent = originalText;
                         document.body.classList.remove('loading');
                     })
                     .catch(error => {
                         console.error('PDF generation error:', error);
                         
                         // Reset button
-                        generatePdfBtn.textContent = 'Generate & Download PDF';
+                        generatePdfBtn.textContent = originalText;
                         document.body.classList.remove('loading');
                         
                         alert('Error generating PDF. Please try again.');
@@ -712,9 +710,9 @@ College Name - Diploma (2012-2014)"></textarea>
                 }
             }
             
-            // Update resume preview
-            function updateResumePreview() {
-                const formData = {
+            // Get form data
+            function getFormData() {
+                return {
                     fullName: document.getElementById('fullName').value || 'Your Name',
                     jobTitle: document.getElementById('jobTitle').value || 'Professional Title',
                     email: document.getElementById('email').value || 'your.email@example.com',
@@ -725,6 +723,80 @@ College Name - Diploma (2012-2014)"></textarea>
                     education: document.getElementById('education').value || 'Your education details will appear here.',
                     skills: document.getElementById('skills').value || 'Your skills will appear here.'
                 };
+            }
+            
+            // Generate HTML for PDF
+            function generatePdfHtml(formData) {
+                let experienceHtml = '';
+                if (formData.experience && formData.experience !== 'Your work experience will appear here.') {
+                    const entries = formData.experience.split('\n\n');
+                    experienceHtml = entries.map(entry => {
+                        const lines = entry.split('\n');
+                        let html = `<div><strong>${lines[0]}</strong></div>`;
+                        if (lines.length > 1) {
+                            html += '<ul>';
+                            for (let i = 1; i < lines.length; i++) {
+                                if (lines[i].trim()) {
+                                    html += `<li>${lines[i].replace(/^- /, '')}</li>`;
+                                }
+                            }
+                            html += '</ul>';
+                        }
+                        return html;
+                    }).join('');
+                } else {
+                    experienceHtml = '<div>Your work experience will appear here.</div>';
+                }
+                
+                let educationHtml = '';
+                if (formData.education && formData.education !== 'Your education details will appear here.') {
+                    const entries = formData.education.split('\n\n');
+                    educationHtml = entries.map(entry => {
+                        const lines = entry.split('\n');
+                        let html = `<div><strong>${lines[0]}</strong></div>`;
+                        if (lines.length > 1) {
+                            html += `<div>${lines.slice(1).join('<br>')}</div>`;
+                        }
+                        return html;
+                    }).join('');
+                } else {
+                    educationHtml = '<div>Your education details will appear here.</div>';
+                }
+                
+                return `
+                    <div class="template-${currentTemplate}" style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
+                        <div class="header" style="text-align: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 2px solid ${currentTemplate === 'modern' ? '#4361ee' : '#ccc'};">
+                            <div class="name" style="font-size: 28px; font-weight: 700; color: ${currentTemplate === 'modern' ? '#4361ee' : '#212529'}; margin-bottom: 5px;">${formData.fullName}</div>
+                            <div class="contact" style="color: #666; margin-bottom: 10px; font-size: 16px;">${formData.email} | ${formData.phone} | ${formData.location}</div>
+                            ${formData.jobTitle ? `<div class="job-title" style="font-size: 18px; color: ${currentTemplate === 'modern' ? '#3a0ca3' : '#555'}; ${currentTemplate === 'classic' ? 'font-style: italic;' : 'font-weight: 600;'}">${formData.jobTitle}</div>` : ''}
+                        </div>
+                        
+                        <div class="section" style="margin-bottom: 20px;">
+                            <div class="section-title" style="font-size: 18px; font-weight: 600; color: ${currentTemplate === 'modern' ? '#3a0ca3' : '#212529'}; border-bottom: ${currentTemplate === 'modern' ? '2px solid #4361ee' : '1px solid #ccc'}; padding-bottom: 5px; margin-bottom: 10px;">PROFESSIONAL SUMMARY</div>
+                            <div>${formData.summary}</div>
+                        </div>
+                        
+                        <div class="section" style="margin-bottom: 20px;">
+                            <div class="section-title" style="font-size: 18px; font-weight: 600; color: ${currentTemplate === 'modern' ? '#3a0ca3' : '#212529'}; border-bottom: ${currentTemplate === 'modern' ? '2px solid #4361ee' : '1px solid #ccc'}; padding-bottom: 5px; margin-bottom: 10px;">EXPERIENCE</div>
+                            ${experienceHtml}
+                        </div>
+                        
+                        <div class="section" style="margin-bottom: 20px;">
+                            <div class="section-title" style="font-size: 18px; font-weight: 600; color: ${currentTemplate === 'modern' ? '#3a0ca3' : '#212529'}; border-bottom: ${currentTemplate === 'modern' ? '2px solid #4361ee' : '1px solid #ccc'}; padding-bottom: 5px; margin-bottom: 10px;">EDUCATION</div>
+                            ${educationHtml}
+                        </div>
+                        
+                        <div class="section" style="margin-bottom: 20px;">
+                            <div class="section-title" style="font-size: 18px; font-weight: 600; color: ${currentTemplate === 'modern' ? '#3a0ca3' : '#212529'}; border-bottom: ${currentTemplate === 'modern' ? '2px solid #4361ee' : '1px solid #ccc'}; padding-bottom: 5px; margin-bottom: 10px;">SKILLS</div>
+                            <div>${formData.skills}</div>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            // Update resume preview
+            function updateResumePreview() {
+                const formData = getFormData();
                 
                 let experienceHtml = '';
                 if (formData.experience && formData.experience !== 'Your work experience will appear here.') {
