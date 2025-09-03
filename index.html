@@ -389,6 +389,23 @@
             font-size: 0.9rem;
         }
         
+        /* PDF-specific styles */
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            .resume-preview, .resume-preview * {
+                visibility: visible;
+            }
+            .resume-preview {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                padding: 15px;
+            }
+        }
+        
         @media (max-width: 768px) {
             .app-container {
                 flex-direction: column;
@@ -538,18 +555,38 @@ College Name - Diploma (2012-2014)"></textarea>
             // Update preview when form changes
             resumeForm.addEventListener('input', updateResumePreview);
             
-            // Generate PDF
+            // Generate PDF - FIXED VERSION
             generatePdfBtn.addEventListener('click', function() {
-                const element = document.getElementById('resumePreview');
+                // Create a clone of the preview element
+                const element = resumePreview.cloneNode(true);
+                element.id = 'pdf-resume'; // Change ID to avoid conflicts
+                element.style.padding = '20px';
+                element.style.width = '210mm'; // A4 width
+                element.style.minHeight = '297mm'; // A4 height
+                
+                // Apply template-specific styles for PDF
+                element.classList.add(`template-${currentTemplate}`);
+                
+                // Temporarily append to body for printing
+                document.body.appendChild(element);
+                
                 const options = {
                     margin: 10,
                     filename: 'my-resume.pdf',
                     image: { type: 'jpeg', quality: 0.98 },
-                    html2canvas: { scale: 2 },
+                    html2canvas: { 
+                        scale: 2,
+                        useCORS: true,
+                        logging: false
+                    },
                     jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
                 };
                 
-                html2pdf().set(options).from(element).save();
+                // Generate and download PDF
+                html2pdf().set(options).from(element).save().then(() => {
+                    // Remove the temporary element after PDF generation
+                    document.body.removeChild(element);
+                });
             });
             
             // Save data to local storage
@@ -603,7 +640,7 @@ College Name - Diploma (2012-2014)"></textarea>
                     const entries = formData.experience.split('\n\n');
                     experienceHtml = entries.map(entry => {
                         const lines = entry.split('\n');
-                        let html = `<strong>${lines[0]}</strong>`;
+                        let html = `<div class="experience-entry"><strong>${lines[0]}</strong>`;
                         if (lines.length > 1) {
                             html += '<ul>';
                             for (let i = 1; i < lines.length; i++) {
@@ -613,6 +650,7 @@ College Name - Diploma (2012-2014)"></textarea>
                             }
                             html += '</ul>';
                         }
+                        html += '</div>';
                         return html;
                     }).join('');
                 }
@@ -622,10 +660,11 @@ College Name - Diploma (2012-2014)"></textarea>
                     const entries = formData.education.split('\n\n');
                     educationHtml = entries.map(entry => {
                         const lines = entry.split('\n');
-                        let html = `<strong>${lines[0]}</strong>`;
+                        let html = `<div class="education-entry"><strong>${lines[0]}</strong>`;
                         if (lines.length > 1) {
                             html += `<div>${lines[1]}</div>`;
                         }
+                        html += '</div>';
                         return html;
                     }).join('');
                 }
