@@ -433,6 +433,61 @@
             background: white;
             box-sizing: border-box;
         }
+        
+        /* PDF-specific styles */
+        .pdf-template {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            width: 100%;
+            height: 100%;
+        }
+        
+        .pdf-header {
+            text-align: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #4361ee;
+        }
+        
+        .pdf-name {
+            font-size: 28px;
+            font-weight: 700;
+            color: #4361ee;
+            margin-bottom: 5px;
+        }
+        
+        .pdf-contact {
+            color: #666;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+        
+        .pdf-job-title {
+            font-size: 18px;
+            color: #3a0ca3;
+            font-weight: 600;
+        }
+        
+        .pdf-section {
+            margin-bottom: 20px;
+        }
+        
+        .pdf-section-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #3a0ca3;
+            border-bottom: 2px solid #4361ee;
+            padding-bottom: 5px;
+            margin-bottom: 10px;
+        }
+        
+        .pdf-ul {
+            padding-left: 20px;
+            margin: 10px 0;
+        }
+        
+        .pdf-li {
+            margin-bottom: 5px;
+        }
     </style>
 </head>
 <body>
@@ -579,9 +634,153 @@ College Name - Diploma (2012-2014)"></textarea>
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // [Previous code remains the same until the generatePdfHtml function]
-
-            // Generate HTML for PDF - FIXED VERSION
+            // Elements
+            const resumeForm = document.getElementById('resumeForm');
+            const generatePdfBtn = document.getElementById('generatePdf');
+            const saveDataBtn = document.getElementById('saveData');
+            const resetFormBtn = document.getElementById('resetForm');
+            const resumePreview = document.getElementById('resumePreview');
+            const templateOptions = document.querySelectorAll('.template-option');
+            const pdfContainer = document.getElementById('pdf-container');
+            
+            // Current template
+            let currentTemplate = 'modern';
+            
+            // Template selection
+            templateOptions.forEach(option => {
+                option.addEventListener('click', function() {
+                    templateOptions.forEach(opt => opt.classList.remove('active'));
+                    this.classList.add('active');
+                    currentTemplate = this.getAttribute('data-template');
+                    updateResumePreview();
+                });
+            });
+            
+            // Update preview when form changes
+            resumeForm.addEventListener('input', updateResumePreview);
+            
+            // Generate PDF
+            generatePdfBtn.addEventListener('click', function() {
+                // Add loading state
+                document.body.classList.add('loading');
+                const originalText = generatePdfBtn.textContent;
+                generatePdfBtn.textContent = 'Generating PDF...';
+                
+                // Create a clean version of the resume for PDF
+                const formData = getFormData();
+                const pdfHtml = generatePdfHtml(formData);
+                
+                // Put the content in the PDF container
+                pdfContainer.innerHTML = pdfHtml;
+                
+                const options = {
+                    margin: [10, 10, 10, 10],
+                    filename: formData.fullName.replace(/\s+/g, '_') + '_resume.pdf',
+                    image: { type: 'jpeg', quality: 0.98 },
+                    html2canvas: { 
+                        scale: 2,
+                        useCORS: true,
+                        logging: false,
+                        backgroundColor: '#FFFFFF'
+                    },
+                    jsPDF: { 
+                        unit: 'mm', 
+                        format: 'a4', 
+                        orientation: 'portrait' 
+                    }
+                };
+                
+                // Generate PDF
+                html2pdf()
+                    .set(options)
+                    .from(pdfContainer)
+                    .save()
+                    .then(() => {
+                        // Reset button
+                        generatePdfBtn.textContent = originalText;
+                        document.body.classList.remove('loading');
+                    })
+                    .catch(error => {
+                        console.error('PDF generation error:', error);
+                        
+                        // Reset button
+                        generatePdfBtn.textContent = originalText;
+                        document.body.classList.remove('loading');
+                        
+                        alert('Error generating PDF. Please try again.');
+                    });
+            });
+            
+            // Save data to local storage
+            saveDataBtn.addEventListener('click', function() {
+                const formData = {};
+                document.querySelectorAll('#resumeForm input, #resumeForm textarea').forEach(input => {
+                    formData[input.id] = input.value;
+                });
+                
+                // Save template preference too
+                formData.template = currentTemplate;
+                
+                localStorage.setItem('resumeData', JSON.stringify(formData));
+                alert('Resume data saved successfully!');
+            });
+            
+            // Reset form
+            resetFormBtn.addEventListener('click', function() {
+                if (confirm('Are you sure you want to reset the form? All data will be lost.')) {
+                    resumeForm.reset();
+                    localStorage.removeItem('resumeData');
+                    
+                    // Reset template to modern
+                    templateOptions.forEach(opt => opt.classList.remove('active'));
+                    document.querySelector('[data-template="modern"]').classList.add('active');
+                    currentTemplate = 'modern';
+                    
+                    updateResumePreview();
+                }
+            });
+            
+            // Load saved data if exists
+            const savedData = localStorage.getItem('resumeData');
+            if (savedData) {
+                try {
+                    const formData = JSON.parse(savedData);
+                    for (const id in formData) {
+                        if (document.getElementById(id)) {
+                            document.getElementById(id).value = formData[id] || '';
+                        }
+                    }
+                    
+                    // Load template preference
+                    if (formData.template) {
+                        templateOptions.forEach(opt => opt.classList.remove('active'));
+                        document.querySelector(`[data-template="${formData.template}"]`).classList.add('active');
+                        currentTemplate = formData.template;
+                    }
+                    
+                    updateResumePreview();
+                } catch (e) {
+                    console.error('Error loading saved data:', e);
+                    localStorage.removeItem('resumeData');
+                }
+            }
+            
+            // Get form data
+            function getFormData() {
+                return {
+                    fullName: document.getElementById('fullName').value || 'Your Name',
+                    jobTitle: document.getElementById('jobTitle').value || 'Professional Title',
+                    email: document.getElementById('email').value || 'your.email@example.com',
+                    phone: document.getElementById('phone').value || '+1 (123) 456-7890',
+                    location: document.getElementById('location').value || 'Your Location',
+                    summary: document.getElementById('summary').value || 'Your professional summary will appear here.',
+                    experience: document.getElementById('experience').value || 'Your work experience will appear here.',
+                    education: document.getElementById('education').value || 'Your education details will appear here.',
+                    skills: document.getElementById('skills').value || 'Your skills will appear here.'
+                };
+            }
+            
+            // Generate HTML for PDF
             function generatePdfHtml(formData) {
                 let experienceHtml = '';
                 if (formData.experience && formData.experience !== 'Your work experience will appear here.') {
@@ -633,37 +832,37 @@ College Name - Diploma (2012-2014)"></textarea>
                 }
                 
                 return `
-                    <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 100%;">
-                        <div style="text-align: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 2px solid ${currentTemplate === 'modern' ? '#4361ee' : (currentTemplate === 'classic' ? '#ccc' : '#eee')};">
-                            <div style="font-size: 28px; font-weight: 700; color: ${currentTemplate === 'modern' ? '#4361ee' : '#212529'}; margin-bottom: 5px;">${formData.fullName}</div>
-                            <div style="color: #666; margin-bottom: 10px; font-size: 16px;">${formData.email} | ${formData.phone} | ${formData.location}</div>
-                            ${formData.jobTitle ? `<div style="font-size: 18px; color: ${currentTemplate === 'modern' ? '#3a0ca3' : '#555'}; ${currentTemplate === 'classic' ? 'font-style: italic;' : 'font-weight: 600;'}">${formData.jobTitle}</div>` : ''}
+                    <div class="pdf-template">
+                        <div class="pdf-header">
+                            <div class="pdf-name">${formData.fullName}</div>
+                            <div class="pdf-contact">${formData.email} | ${formData.phone} | ${formData.location}</div>
+                            ${formData.jobTitle ? `<div class="pdf-job-title">${formData.jobTitle}</div>` : ''}
                         </div>
                         
-                        <div style="margin-bottom: 20px;">
-                            <div style="font-size: 18px; font-weight: 600; color: ${currentTemplate === 'modern' ? '#3a0ca3' : '#212529'}; border-bottom: ${currentTemplate === 'modern' ? '2px solid #4361ee' : (currentTemplate === 'classic' ? '1px solid #ccc' : '1px solid #eee')}; padding-bottom: 5px; margin-bottom: 10px;">PROFESSIONAL SUMMARY</div>
+                        <div class="pdf-section">
+                            <div class="pdf-section-title">PROFESSIONAL SUMMARY</div>
                             <div>${formData.summary}</div>
                         </div>
                         
-                        <div style="margin-bottom: 20px;">
-                            <div style="font-size: 18px; font-weight: 600; color: ${currentTemplate === 'modern' ? '#3a0ca3' : '#212529'}; border-bottom: ${currentTemplate === 'modern' ? '2px solid #4361ee' : (currentTemplate === 'classic' ? '1px solid #ccc' : '1px solid #eee')}; padding-bottom: 5px; margin-bottom: 10px;">EXPERIENCE</div>
+                        <div class="pdf-section">
+                            <div class="pdf-section-title">EXPERIENCE</div>
                             ${experienceHtml}
                         </div>
                         
-                        <div style="margin-bottom: 20px;">
-                            <div style="font-size: 18px; font-weight: 600; color: ${currentTemplate === 'modern' ? '#3a0ca3' : '#212529'}; border-bottom: ${currentTemplate === 'modern' ? '2px solid #4361ee' : (currentTemplate === 'classic' ? '1px solid #ccc' : '1px solid #eee')}; padding-bottom: 5px; margin-bottom: 10px;">EDUCATION</div>
+                        <div class="pdf-section">
+                            <div class="pdf-section-title">EDUCATION</div>
                             ${educationHtml}
                         </div>
                         
-                        <div style="margin-bottom: 20px;">
-                            <div style="font-size: 18px; font-weight: 600; color: ${currentTemplate === 'modern' ? '#3a0ca3' : '#212529'}; border-bottom: ${currentTemplate === 'modern' ? '2px solid #4361ee' : (currentTemplate === 'classic' ? '1px solid #ccc' : '1px solid #eee')}; padding-bottom: 5px; margin-bottom: 10px;">SKILLS</div>
+                        <div class="pdf-section">
+                            <div class="pdf-section-title">SKILLS</div>
                             <div>${skillsHtml}</div>
                         </div>
                     </div>
                 `;
             }
-
-            // Update resume preview - FIXED VERSION
+            
+            // Update resume preview
             function updateResumePreview() {
                 const formData = getFormData();
                 
@@ -751,6 +950,6 @@ College Name - Diploma (2012-2014)"></textarea>
             // Initialize preview
             updateResumePreview();
         });
-</script>
+    </script>
 </body>
 </html>
