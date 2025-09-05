@@ -638,7 +638,7 @@ College Name - Diploma (2012-2014)"></textarea>
                 // Generate PDF
                 html2pdf()
                     .set(options)
-                    .from(pdfContainer)
+                    .from(pdfContainer.innerHTML)   <!-- ✅ fixed: use innerHTML instead of container -->
                     .save()
                     .then(() => {
                         // Reset button
@@ -654,7 +654,7 @@ College Name - Diploma (2012-2014)"></textarea>
                         
                         alert('Error generating PDF. Please try again.');
                     });
-            });
+
             
             // Save data to local storage
             saveDataBtn.addEventListener('click', function() {
