@@ -422,75 +422,26 @@
             opacity: 0.7;
             pointer-events: none;
         }
-
-        #pdf-container {
-            position: absolute;
-            left: -9999px;
-            top: -9999px;
+        
+        /* Critical fix for PDF generation */
+        .pdf-mode .resume-preview {
             width: 210mm;
             min-height: 297mm;
             padding: 15mm;
-            background: white;
             box-sizing: border-box;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            box-shadow: none;
+            border: none;
+            position: absolute;
+            left: 0;
+            top: 0;
+            z-index: 9999;
+            background: white;
         }
         
-        /* PDF-specific styles */
-        .pdf-template {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            width: 100%;
-            height: 100%;
+        .pdf-mode {
+            overflow: hidden;
         }
         
-        .pdf-header {
-            text-align: center;
-            margin-bottom: 20px;
-            padding-bottom: 15px;
-            border-bottom: 2px solid #4361ee;
-        }
-        
-        .pdf-name {
-            font-size: 28px;
-            font-weight: 700;
-            color: #4361ee;
-            margin-bottom: 5px;
-        }
-        
-        .pdf-contact {
-            color: #666;
-            margin-bottom: 10px;
-            font-size: 16px;
-        }
-        
-        .pdf-job-title {
-            font-size: 18px;
-            color: #3a0ca3;
-            font-weight: 600;
-        }
-        
-        .pdf-section {
-            margin-bottom: 20px;
-        }
-        
-        .pdf-section-title {
-            font-size: 18px;
-            font-weight: 600;
-            color: #3a0ca3;
-            border-bottom: 2px solid #4361ee;
-            padding-bottom: 5px;
-            margin-bottom: 10px;
-        }
-        
-        .pdf-ul {
-            padding-left: 20px;
-            margin: 10px 0;
-        }
-        
-        .pdf-li {
-            margin-bottom: 5px;
-        }
-        
-        /* Critical fix for PDF generation */
         .pdf-visible {
             visibility: visible !important;
             opacity: 1 !important;
@@ -638,9 +589,6 @@ College Name - Diploma (2012-2014)"></textarea>
         </div>
     </div>
 
-    <!-- Hidden container for PDF generation -->
-    <div id="pdf-container"></div>
-
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             // Elements
@@ -650,7 +598,7 @@ College Name - Diploma (2012-2014)"></textarea>
             const resetFormBtn = document.getElementById('resetForm');
             const resumePreview = document.getElementById('resumePreview');
             const templateOptions = document.querySelectorAll('.template-option');
-            const pdfContainer = document.getElementById('pdf-container');
+            const body = document.body;
             
             // Current template
             let currentTemplate = 'modern';
@@ -678,13 +626,13 @@ College Name - Diploma (2012-2014)"></textarea>
                 // Use setTimeout to allow UI to update before heavy PDF processing
                 setTimeout(function() {
                     try {
-                        // Create a clean version of the resume for PDF
+                        // Enable PDF mode
+                        body.classList.add('pdf-mode');
+                        
+                        // Update preview to ensure it's current
+                        updateResumePreview();
+                        
                         const formData = getFormData();
-                        const pdfHtml = generatePdfHtml(formData);
-                        
-                        // Put the content in the PDF container
-                        pdfContainer.innerHTML = pdfHtml;
-                        
                         const options = {
                             margin: [10, 10, 10, 10],
                             filename: formData.fullName.replace(/\s+/g, '_') + '_resume.pdf',
@@ -695,7 +643,9 @@ College Name - Diploma (2012-2014)"></textarea>
                                 logging: false,
                                 backgroundColor: '#FFFFFF',
                                 scrollX: 0,
-                                scrollY: 0
+                                scrollY: 0,
+                                width: 810, // 210mm * 96dpi / 25.4mm/inch ≈ 795px, using 810 for margin
+                                windowWidth: 810
                             },
                             jsPDF: { 
                                 unit: 'mm', 
@@ -704,22 +654,24 @@ College Name - Diploma (2012-2014)"></textarea>
                             }
                         };
                         
-                        // Generate PDF
+                        // Generate PDF directly from the preview
                         html2pdf()
                             .set(options)
-                            .from(pdfContainer)
+                            .from(resumePreview)
                             .save()
                             .then(() => {
-                                // Reset button
+                                // Reset button and remove PDF mode
                                 generatePdfBtn.textContent = originalText;
                                 document.body.classList.remove('loading');
+                                body.classList.remove('pdf-mode');
                             })
                             .catch(error => {
                                 console.error('PDF generation error:', error);
                                 
-                                // Reset button
+                                // Reset button and remove PDF mode
                                 generatePdfBtn.textContent = originalText;
                                 document.body.classList.remove('loading');
+                                body.classList.remove('pdf-mode');
                                 
                                 alert('Error generating PDF. Please try again.');
                             });
@@ -727,6 +679,7 @@ College Name - Diploma (2012-2014)"></textarea>
                         console.error('Error in PDF generation:', error);
                         generatePdfBtn.textContent = originalText;
                         document.body.classList.remove('loading');
+                        body.classList.remove('pdf-mode');
                         alert('Error generating PDF. Please try again.');
                     }
                 }, 100);
@@ -799,88 +752,6 @@ College Name - Diploma (2012-2014)"></textarea>
                     education: document.getElementById('education').value || 'Your education details will appear here.',
                     skills: document.getElementById('skills').value || 'Your skills will appear here.'
                 };
-            }
-            
-            // Generate HTML for PDF
-            function generatePdfHtml(formData) {
-                let experienceHtml = '';
-                if (formData.experience && formData.experience !== 'Your work experience will appear here.') {
-                    const entries = formData.experience.split('\n\n');
-                    experienceHtml = entries.map(entry => {
-                        const lines = entry.split('\n');
-                        let html = `<div style="margin-bottom: 10px;"><strong>${lines[0]}</strong></div>`;
-                        if (lines.length > 1) {
-                            html += '<ul style="margin-top: 5px; margin-bottom: 15px; padding-left: 20px;">';
-                            for (let i = 1; i < lines.length; i++) {
-                                if (lines[i].trim()) {
-                                    // Handle both "- bullet" and "* bullet" formats
-                                    html += `<li style="margin-bottom: 3px;">${lines[i].replace(/^[-*]\s/, '')}</li>`;
-                                }
-                            }
-                            html += '</ul>';
-                        }
-                        return html;
-                    }).join('');
-                } else {
-                    experienceHtml = '<div>Your work experience will appear here.</div>';
-                }
-                
-                let educationHtml = '';
-                if (formData.education && formData.education !== 'Your education details will appear here.') {
-                    const entries = formData.education.split('\n\n');
-                    educationHtml = entries.map(entry => {
-                        const lines = entry.split('\n');
-                        let html = `<div style="margin-bottom: 10px;"><strong>${lines[0]}</strong></div>`;
-                        if (lines.length > 1) {
-                            html += '<ul style="margin-top: 5px; margin-bottom: 15px; padding-left: 20px;">';
-                            for (let i = 1; i < lines.length; i++) {
-                                if (lines[i].trim()) {
-                                    html += `<li style="margin-bottom: 3px;">${lines[i].replace(/^[-*]\s/, '')}</li>`;
-                                }
-                            }
-                            html += '</ul>';
-                        }
-                        return html;
-                    }).join('');
-                } else {
-                    educationHtml = '<div>Your education details will appear here.</div>';
-                }
-                
-                // Skills formatting
-                let skillsHtml = formData.skills;
-                if (formData.skills && formData.skills !== 'Your skills will appear here.') {
-                    skillsHtml = formData.skills.split(',').map(skill => skill.trim()).join(', ');
-                }
-                
-                return `
-                    <div class="pdf-template pdf-visible">
-                        <div class="pdf-header">
-                            <div class="pdf-name">${formData.fullName}</div>
-                            <div class="pdf-contact">${formData.email} | ${formData.phone} | ${formData.location}</div>
-                            ${formData.jobTitle ? `<div class="pdf-job-title">${formData.jobTitle}</div>` : ''}
-                        </div>
-                        
-                        <div class="pdf-section">
-                            <div class="pdf-section-title">PROFESSIONAL SUMMARY</div>
-                            <div>${formData.summary}</div>
-                        </div>
-                        
-                        <div class="pdf-section">
-                            <div class="pdf-section-title">EXPERIENCE</div>
-                            ${experienceHtml}
-                        </div>
-                        
-                        <div class="pdf-section">
-                            <div class="pdf-section-title">EDUCATION</div>
-                            ${educationHtml}
-                        </div>
-                        
-                        <div class="pdf-section">
-                            <div class="pdf-section-title">SKILLS</div>
-                            <div>${skillsHtml}</div>
-                        </div>
-                    </div>
-                `;
             }
             
             // Update resume preview
