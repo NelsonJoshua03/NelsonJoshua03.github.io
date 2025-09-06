@@ -6,6 +6,7 @@
     <title>Free Resume Builder</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
+        /* Your existing CSS remains the same */
         :root {
             --primary: #4361ee;
             --secondary: #3a0ca3;
@@ -448,6 +449,18 @@
             color: #000 !important;
             background: transparent !important;
         }
+
+        /* New styles for PDF generation fix */
+        #pdf-container {
+            position: absolute;
+            left: -9999px;
+            top: -9999px;
+            width: 210mm;
+            min-height: 297mm;
+            padding: 15mm;
+            background: white;
+            z-index: 10000;
+        }
     </style>
 </head>
 <body>
@@ -589,6 +602,9 @@ College Name - Diploma (2012-2014)"></textarea>
         </div>
     </div>
 
+    <!-- Hidden container for PDF generation -->
+    <div id="pdf-container"></div>
+
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             // Elements
@@ -599,6 +615,7 @@ College Name - Diploma (2012-2014)"></textarea>
             const resumePreview = document.getElementById('resumePreview');
             const templateOptions = document.querySelectorAll('.template-option');
             const body = document.body;
+            const pdfContainer = document.getElementById('pdf-container');
             
             // Current template
             let currentTemplate = 'modern';
@@ -626,13 +643,11 @@ College Name - Diploma (2012-2014)"></textarea>
                 // Use setTimeout to allow UI to update before heavy PDF processing
                 setTimeout(function() {
                     try {
-                        // Enable PDF mode
-                        body.classList.add('pdf-mode');
-                        
-                        // Update preview to ensure it's current
-                        updateResumePreview();
-                        
+                        // Create a clone of the resume preview for PDF generation
                         const formData = getFormData();
+                        const pdfHtml = generateResumeHTML(formData, currentTemplate);
+                        pdfContainer.innerHTML = pdfHtml;
+                        
                         const options = {
                             margin: [10, 10, 10, 10],
                             filename: formData.fullName.replace(/\s+/g, '_') + '_resume.pdf',
@@ -641,11 +656,7 @@ College Name - Diploma (2012-2014)"></textarea>
                                 scale: 2,
                                 useCORS: true,
                                 logging: false,
-                                backgroundColor: '#FFFFFF',
-                                scrollX: 0,
-                                scrollY: 0,
-                                width: 810, // 210mm * 96dpi / 25.4mm/inch ≈ 795px, using 810 for margin
-                                windowWidth: 810
+                                backgroundColor: '#FFFFFF'
                             },
                             jsPDF: { 
                                 unit: 'mm', 
@@ -654,32 +665,65 @@ College Name - Diploma (2012-2014)"></textarea>
                             }
                         };
                         
-                        // Generate PDF directly from the preview
+                        // Generate PDF from the hidden container
                         html2pdf()
                             .set(options)
-                            .from(resumePreview)
+                            .from(pdfContainer)
                             .save()
                             .then(() => {
-                                // Reset button and remove PDF mode
+                                // Reset button and remove loading state
                                 generatePdfBtn.textContent = originalText;
                                 document.body.classList.remove('loading');
-                                body.classList.remove('pdf-mode');
+                                pdfContainer.innerHTML = '';
                             })
                             .catch(error => {
                                 console.error('PDF generation error:', error);
                                 
-                                // Reset button and remove PDF mode
+                                // Try fallback method
+                                try {
+                                    // Create a print-friendly version
+                                    const printWindow = window.open('', '_blank');
+                                    printWindow.document.write(`
+                                        <!DOCTYPE html>
+                                        <html>
+                                        <head>
+                                            <title>${formData.fullName} - Resume</title>
+                                            <style>
+                                                body { font-family: Arial, sans-serif; line-height: 1.6; padding: 20px; }
+                                                .header { text-align: center; margin-bottom: 20px; }
+                                                .name { font-size: 24px; font-weight: bold; }
+                                                .section { margin-bottom: 15px; }
+                                                .section-title { font-size: 18px; font-weight: bold; border-bottom: 1px solid #000; margin-bottom: 10px; }
+                                                ul { padding-left: 20px; }
+                                            </style>
+                                        </head>
+                                        <body>
+                                            ${pdfHtml}
+                                        </body>
+                                        </html>
+                                    `);
+                                    printWindow.document.close();
+                                    
+                                    // Try to print as PDF
+                                    setTimeout(() => {
+                                        printWindow.print();
+                                        printWindow.onafterprint = () => printWindow.close();
+                                    }, 250);
+                                } catch (fallbackError) {
+                                    console.error('Fallback also failed:', fallbackError);
+                                    alert('Error generating PDF. Please try printing the page manually.');
+                                }
+                                
+                                // Reset button and remove loading state
                                 generatePdfBtn.textContent = originalText;
                                 document.body.classList.remove('loading');
-                                body.classList.remove('pdf-mode');
-                                
-                                alert('Error generating PDF. Please try again.');
+                                pdfContainer.innerHTML = '';
                             });
                     } catch (error) {
                         console.error('Error in PDF generation:', error);
                         generatePdfBtn.textContent = originalText;
                         document.body.classList.remove('loading');
-                        body.classList.remove('pdf-mode');
+                        pdfContainer.innerHTML = '';
                         alert('Error generating PDF. Please try again.');
                     }
                 }, 100);
@@ -754,10 +798,8 @@ College Name - Diploma (2012-2014)"></textarea>
                 };
             }
             
-            // Update resume preview
-            function updateResumePreview() {
-                const formData = getFormData();
-                
+            // Generate resume HTML for PDF
+            function generateResumeHTML(formData, template) {
                 let experienceHtml = '';
                 if (formData.experience && formData.experience !== 'Your work experience will appear here.') {
                     const entries = formData.experience.split('\n\n');
@@ -806,8 +848,8 @@ College Name - Diploma (2012-2014)"></textarea>
                     skillsHtml = formData.skills.split(',').map(skill => skill.trim()).join(', ');
                 }
                 
-                const templateHtml = `
-                    <div class="template-${currentTemplate}">
+                return `
+                    <div class="template-${template}">
                         <div class="header">
                             <div class="name">${formData.fullName}</div>
                             <div class="contact">${formData.email} | ${formData.phone} | ${formData.location}</div>
@@ -835,8 +877,12 @@ College Name - Diploma (2012-2014)"></textarea>
                         </div>
                     </div>
                 `;
-                
-                resumePreview.innerHTML = templateHtml;
+            }
+            
+            // Update resume preview
+            function updateResumePreview() {
+                const formData = getFormData();
+                resumePreview.innerHTML = generateResumeHTML(formData, currentTemplate);
             }
             
             // Initialize preview
